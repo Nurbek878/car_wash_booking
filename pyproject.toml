@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "car-wash-booking"
+version = "0.1.0"
+description = "\"Приложение для бронирования автомойки\""
+authors = ["Nurbek878 <nurik878878@yandex.ru>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "car_wash_booking"}]
+
+[tool.poetry.dependencies]
+python = "3.9.19"
+fastapi = "^0.111.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
