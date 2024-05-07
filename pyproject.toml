@@ -10,6 +10,10 @@ packages = [{include = "car_wash_booking"}]
 [tool.poetry.dependencies]
 python = "3.9.19"
 fastapi = "^0.111.0"
+pydantic-settings = "^2.2.1"
+sqlalchemy = "^2.0.30"
+alembic = "^1.13.1"
+asyncpg = "^0.29.0"
 
 
 [build-system]
