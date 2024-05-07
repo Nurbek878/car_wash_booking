@@ -3,3 +3,6 @@ generate:
 
 migrate:
 	alembic upgrade head
+
+run:
+	uvicorn app.main:app --reload
