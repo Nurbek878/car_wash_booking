@@ -1,4 +1,8 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.db import get_async_session
 
 from app.crud.workplace import create_workplace, get_workplace_id_by_name
 from app.schemas.workplace import WorkplaceCreate, WorkplaceDB
@@ -12,13 +16,14 @@ router = APIRouter()
     response_model_exclude_none=True,
 )
 async def create_new_workplace(
-    meeting_room: WorkplaceCreate,
+    workplace: WorkplaceCreate,
+    session: AsyncSession = Depends(get_async_session),
 ):
-    workplace_id = await get_workplace_id_by_name(meeting_room.name)
+    workplace_id = await get_workplace_id_by_name(workplace.name, session)
     if workplace_id is not None:
         raise HTTPException(
             status_code=422,
             detail=" Моечный пост с таким названием уже существует!",
         )
-    new_room = await create_workplace(meeting_room)
-    return new_room
+    new_workplace = await create_workplace(workplace, session)
+    return new_workplace
