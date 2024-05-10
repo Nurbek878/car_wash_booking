@@ -30,11 +30,12 @@ async def get_workplace_id_by_name(
     return db_workplace_id
 
 
-# async def read_all_rooms_from_db(
-#     session: AsyncSession,
-# ) -> list[Workplace]:
-#     return await session.execute(select(Workplace)).scalars().all()
+async def read_all_workplaces_from_db(
+    session: AsyncSession,
+) -> list[Workplace]:
+    db_workplaces = await session.execute(select(Workplace))
+    return db_workplaces.scalars().all()
 
 
-# async def read_room_from_db(session: AsyncSession, room_id: int) -> Optional[Workplace]:
-#     return await session.get(Workplace, room_id)
+async def read_room_from_db(session: AsyncSession, room_id: int) -> Optional[Workplace]:
+    return await session.get(Workplace, room_id)
