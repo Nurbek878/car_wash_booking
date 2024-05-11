@@ -12,6 +12,10 @@ class WorkplaceCreate(WorkplaceBase):
     name: str = Field(..., min_length=1, max_length=100)
 
 
+class WorkplaceUpdate(WorkplaceBase):
+    pass
+
+
 class WorkplaceDB(WorkplaceCreate):
     id: int
 
