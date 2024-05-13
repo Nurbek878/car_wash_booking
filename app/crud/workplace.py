@@ -65,3 +65,12 @@ async def update_workplace(
     await session.commit()
     await session.refresh(db_workplace)
     return db_workplace
+
+
+async def delete_workplace(
+        db_workplace: Workplace,
+        session: AsyncSession,
+) -> Workplace:
+    await session.delete(db_workplace)
+    await session.commit()
+    return db_workplace

@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import get_async_session
 from app.crud.workplace import (
     create_workplace,
+    delete_workplace,
     get_workplace_by_id,
     get_workplace_id_by_name,
     read_all_workplaces_from_db, update_workplace
@@ -54,13 +55,27 @@ async def update_workplace_by_id(
     workplace_in: WorkplaceUpdate,
     session: AsyncSession = Depends(get_async_session),
 ):
-    db_workplace = await get_workplace_by_id(workplace_id, session)
-    if not db_workplace:
-        raise HTTPException(status_code=404, detail="Моечный пост не найден")
-    await check_name_duplicate(workplace_in.name, session)
-    updated_workplace = await update_workplace(db_workplace, workplace_in,
+    workplace = await get_workplace_by_id(workplace_id, session)
+    if workplace is None:
+        raise HTTPException(status_code=404,
+                            detail="Моечный пост не найден")
+    if workplace_in.name is not None:
+        await check_name_duplicate(workplace_in.name, session)
+    updated_workplace = await update_workplace(workplace, workplace_in,
                                                session)
     return updated_workplace
+
+
+@router.delete("/{workplace_id}")
+async def delete_workplace_by_id(
+    workplace_id: int,
+    session: AsyncSession = Depends(get_async_session),
+):
+    workplace = await get_workplace_by_id(workplace_id, session)
+    if not workplace:
+        raise HTTPException(status_code=404,
+                            detail="Моечный пост не найден")
+    await delete_workplace(workplace, session)
 
 
 async def check_name_duplicate(
