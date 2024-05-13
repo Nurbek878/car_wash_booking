@@ -10,6 +10,7 @@ from app.crud.workplace import (
     get_workplace_id_by_name,
     read_all_workplaces_from_db, update_workplace
 )
+from app.models.workplace import Workplace
 from app.schemas.workplace import (WorkplaceCreate, WorkplaceDB,
                                    WorkplaceUpdate)
 
@@ -55,10 +56,7 @@ async def update_workplace_by_id(
     workplace_in: WorkplaceUpdate,
     session: AsyncSession = Depends(get_async_session),
 ):
-    workplace = await get_workplace_by_id(workplace_id, session)
-    if workplace is None:
-        raise HTTPException(status_code=404,
-                            detail="Моечный пост не найден")
+    workplace = await check_worplace_exists(workplace_id, session)
     if workplace_in.name is not None:
         await check_name_duplicate(workplace_in.name, session)
     updated_workplace = await update_workplace(workplace, workplace_in,
@@ -66,16 +64,27 @@ async def update_workplace_by_id(
     return updated_workplace
 
 
-@router.delete("/{workplace_id}")
+@router.delete("/{workplace_id}",
+               response_model=WorkplaceDB,
+               response_model_exclude_none=True)
 async def delete_workplace_by_id(
     workplace_id: int,
     session: AsyncSession = Depends(get_async_session),
 ):
+    workplace = await check_worplace_exists(workplace_id, session)
+    deleted_workplace = await delete_workplace(workplace, session)
+    return deleted_workplace
+
+
+async def check_worplace_exists(
+        workplace_id: int,
+        session: AsyncSession,
+) -> Workplace:
     workplace = await get_workplace_by_id(workplace_id, session)
     if not workplace:
         raise HTTPException(status_code=404,
                             detail="Моечный пост не найден")
-    await delete_workplace(workplace, session)
+    return workplace
 
 
 async def check_name_duplicate(
