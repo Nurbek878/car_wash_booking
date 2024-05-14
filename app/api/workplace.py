@@ -56,7 +56,7 @@ async def update_workplace_by_id(
     workplace_in: WorkplaceUpdate,
     session: AsyncSession = Depends(get_async_session),
 ):
-    workplace = await check_worplace_exists(workplace_id, session)
+    workplace = await check_workplace_exists(workplace_id, session)
     if workplace_in.name is not None:
         await check_name_duplicate(workplace_in.name, session)
     updated_workplace = await update_workplace(workplace, workplace_in,
@@ -71,12 +71,12 @@ async def delete_workplace_by_id(
     workplace_id: int,
     session: AsyncSession = Depends(get_async_session),
 ):
-    workplace = await check_worplace_exists(workplace_id, session)
+    workplace = await check_workplace_exists(workplace_id, session)
     deleted_workplace = await delete_workplace(workplace, session)
     return deleted_workplace
 
 
-async def check_worplace_exists(
+async def check_workplace_exists(
         workplace_id: int,
         session: AsyncSession,
 ) -> Workplace:
