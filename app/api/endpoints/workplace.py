@@ -15,10 +15,7 @@ from app.schemas.workplace import (WorkplaceCreate, WorkplaceDB,
                                    WorkplaceUpdate)
 
 
-router = APIRouter(
-    prefix="/api/workplaces",
-    tags=["Workplaces"],
-)
+router = APIRouter()
 
 
 @router.post(
