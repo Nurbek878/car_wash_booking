@@ -1,21 +1,25 @@
 from datetime import datetime
 from pydantic import BaseModel, validator, Field
 
+from app.utils.time_utils import FROM_TIME
+
 
 class BookingBase(BaseModel):
     booking_from: datetime = Field(..., description='Время'
-                                   'начала бронирования')
+                                   'начала бронирования', example=FROM_TIME)
 
     @validator('booking_from')
     def validate_booking_from(cls, value):
-        now = datetime.now()
-        if value.minute != 0 or value.second != 0 or value.microsecond != 0:
-            raise ValueError('Время начала должно быть ровным часом.')
-        if value.hour < 9 or value.hour > 19:
-            raise ValueError('Время начала должно быть между 09:00 и 19:00.')
+        value = value.replace(tzinfo=None)
+        now = datetime.now().replace(tzinfo=None)
         if value <= now:
-            raise ValueError('Время начала бронирования не может быть'
-                             'меньше текущего времени.')
+            raise ValueError('время бронирования не может быть меньше'
+                             'настоящего')
+        booking_hour = value.hour
+        if booking_hour < 9 or booking_hour >= 18:
+            raise ValueError('время бронирования должно быть между'
+                             '09:00 и 18:00')
+
         return value
 
 
