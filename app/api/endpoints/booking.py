@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import get_async_session
 from app.schemas.booking import BookingCreate, BookingDB
-from app.crud.booking import create_booking
+from app.crud.booking import create_booking, read_all_bookings_from_db
 
 router = APIRouter()
 
@@ -17,3 +17,14 @@ async def create_new_booking(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return new_booking
+
+
+@router.get(
+    "/",
+    response_model=list[BookingDB],
+    response_model_exclude_none=True,
+)
+async def read_all_workplaces(session: AsyncSession = Depends(
+                              get_async_session)):
+    all_workplaces = await read_all_bookings_from_db(session)
+    return all_workplaces

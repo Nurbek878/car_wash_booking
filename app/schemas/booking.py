@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, validator, Field
+from pydantic import BaseModel, Field
 
 from app.utils.time_utils import FROM_TIME
 
@@ -8,7 +8,7 @@ class BookingBase(BaseModel):
     booking_from: datetime = Field(..., description='Время'
                                    'начала бронирования', example=FROM_TIME)
 
-    @validator('booking_from')
+    @classmethod
     def validate_booking_from(cls, value):
         value = value.replace(tzinfo=None)
         now = datetime.now().replace(tzinfo=None)

@@ -45,3 +45,10 @@ async def create_booking(new_booking: BookingCreate,
     await session.commit()
     await session.refresh(db_booking)
     return db_booking
+
+
+async def read_all_bookings_from_db(
+    session: AsyncSession,
+) -> list[Booking]:
+    db_bookings = await session.execute(select(Booking))
+    return db_bookings.scalars().all()
