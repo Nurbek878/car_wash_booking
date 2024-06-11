@@ -7,6 +7,9 @@ from app.utils.time_utils import FROM_TIME
 class BookingBase(BaseModel):
     booking_from: datetime = Field(..., description='Время'
                                    'начала бронирования', example=FROM_TIME)
+    brand: str = Field(..., description='Марка автомобиля')
+    model: str = Field(..., description='Модель автомобиля')
+    number: str = Field(..., description='Номер автомобиля')
 
     @classmethod
     def validate_booking_from(cls, value):
