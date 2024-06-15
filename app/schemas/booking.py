@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
 from app.utils.time_utils import FROM_TIME
 
@@ -11,16 +11,16 @@ class BookingBase(BaseModel):
     model: str = Field(..., description='Модель автомобиля')
     number: str = Field(..., description='Номер автомобиля')
 
-    @classmethod
+    @validator('booking_from')
     def validate_booking_from(cls, value):
         value = value.replace(tzinfo=None)
         now = datetime.now().replace(tzinfo=None)
         if value <= now:
-            raise ValueError('время бронирования не может быть меньше'
+            raise ValueError('Время бронирования не может быть меньше '
                              'настоящего')
         booking_hour = value.hour
         if booking_hour < 9 or booking_hour >= 18:
-            raise ValueError('время бронирования должно быть между'
+            raise ValueError('время бронирования должно быть между '
                              '09:00 и 18:00')
 
         return value

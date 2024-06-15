@@ -30,8 +30,28 @@ async def get_first_available_workplace(booking_from: datetime,
     return available_workplace
 
 
+async def is_booking_conflict(session: AsyncSession,
+                              new_booking: BookingCreate) -> bool:
+    one_hour_later = new_booking.booking_from + timedelta(hours=1)
+    conflict_query = select(Booking).where(
+        and_(
+            Booking.brand == new_booking.brand,
+            Booking.model == new_booking.model,
+            Booking.number == new_booking.number,
+            Booking.booking_from < one_hour_later,
+            new_booking.booking_from < Booking.booking_to
+        )
+    )
+
+    result = await session.execute(conflict_query)
+    return result.scalars().first() is not None
+
+
 async def create_booking(new_booking: BookingCreate,
                          session: AsyncSession) -> Booking:
+    if await is_booking_conflict(session, new_booking):
+        raise ValueError('Автомобиль данной марки и модели с таким номером '
+                         'уже забронирован на это же время.')
     booking_dict = new_booking.dict()
     booking_dict['booking_to'] = booking_dict['booking_from'] + timedelta(
         hours=1)
