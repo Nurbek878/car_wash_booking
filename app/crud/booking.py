@@ -103,3 +103,12 @@ async def update_booking(
     await session.commit()
     await session.refresh(db_booking)
     return db_booking
+
+
+async def delete_booking(
+        db_booking: Workplace,
+        session: AsyncSession,
+) -> Booking:
+    await session.delete(db_booking)
+    await session.commit()
+    return db_booking

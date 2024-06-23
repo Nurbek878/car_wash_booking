@@ -10,7 +10,7 @@ from app.crud.workplace import (
     get_workplace_id_by_name,
     read_all_workplaces_from_db, update_workplace
 )
-from app.models.workplace import Workplace
+from app.models import Workplace
 from app.schemas.workplace import (WorkplaceCreate, WorkplaceDB,
                                    WorkplaceUpdate)
 

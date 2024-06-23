@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import get_async_session
-from app.models.booking import Booking
+from app.models import Booking
 from app.schemas.booking import BookingCreate, BookingDB, BookingUpdate
-from app.crud.booking import (create_booking, get_booking_by_id,
-                              read_all_bookings_from_db, update_booking)
+from app.crud.booking import (create_booking, delete_booking,
+                              get_booking_by_id, read_all_bookings_from_db,
+                              update_booking)
 
 router = APIRouter()
 
@@ -45,6 +46,20 @@ async def update_booking_by_id(
     booking = await check_booking_exists(booking_id, session)
     updated_booking = await update_booking(booking, booking_in,
                                            session)
+    return updated_booking
+
+
+@router.delete(
+    "/{booking_id}",
+    response_model=BookingDB,
+    response_model_exclude_none=True,
+)
+async def delete_booking_by_id(
+    booking_id: int,
+    session: AsyncSession = Depends(get_async_session),
+):
+    booking = await check_booking_exists(booking_id, session)
+    updated_booking = await delete_booking(booking, session)
     return updated_booking
 
 
