@@ -11,6 +11,9 @@ class BookingBase(BaseModel):
     model: str = Field(..., description='Модель автомобиля')
     number: str = Field(..., description='Номер автомобиля')
 
+
+class BookingCreate(BookingBase):
+
     @validator('booking_from')
     def validate_booking_from(cls, value):
         value = value.replace(tzinfo=None)
@@ -22,12 +25,7 @@ class BookingBase(BaseModel):
         if booking_hour < 9 or booking_hour >= 18:
             raise ValueError('время бронирования должно быть между '
                              '09:00 и 18:00')
-
         return value
-
-
-class BookingCreate(BookingBase):
-    pass
 
 
 class BookingDB(BookingBase):

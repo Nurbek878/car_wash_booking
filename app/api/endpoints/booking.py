@@ -24,7 +24,7 @@ async def create_new_booking(
     response_model=list[BookingDB],
     response_model_exclude_none=True,
 )
-async def read_all_workplaces(session: AsyncSession = Depends(
+async def read_all_bookings(session: AsyncSession = Depends(
                               get_async_session)):
-    all_workplaces = await read_all_bookings_from_db(session)
-    return all_workplaces
+    all_bookings = await read_all_bookings_from_db(session)
+    return all_bookings
