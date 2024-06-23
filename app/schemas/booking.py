@@ -28,6 +28,10 @@ class BookingCreate(BookingBase):
         return value
 
 
+class BookingUpdate(BookingBase):
+    pass
+
+
 class BookingDB(BookingBase):
     id: int
     workplace_id: int

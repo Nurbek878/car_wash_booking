@@ -1,9 +1,11 @@
 from datetime import datetime, timedelta
+from typing import Optional
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 from app.models.booking import Booking
 from app.models.workplace import Workplace
-from app.schemas.booking import BookingCreate
+from app.schemas.booking import BookingCreate, BookingUpdate
 
 
 async def get_first_available_workplace(booking_from: datetime,
@@ -72,3 +74,32 @@ async def read_all_bookings_from_db(
 ) -> list[Booking]:
     db_bookings = await session.execute(select(Booking))
     return db_bookings.scalars().all()
+
+
+async def get_booking_by_id(
+        booking_id: int,
+        session: AsyncSession,
+) -> Optional[Booking]:
+    db_booking = await session.execute(
+        select(Booking).where(
+            Booking.id == booking_id
+        )
+    )
+    db_booking = db_booking.scalars().first()
+    return db_booking
+
+
+async def update_booking(
+        db_booking: Booking,
+        booking_in: BookingUpdate,
+        session: AsyncSession,
+) -> Booking:
+    obj_data = jsonable_encoder(db_booking)
+    update_data = booking_in.dict(exclude_unset=True)
+    for field in obj_data:
+        if field in update_data:
+            setattr(db_booking, field, update_data[field])
+    session.add(db_booking)
+    await session.commit()
+    await session.refresh(db_booking)
+    return db_booking

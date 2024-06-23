@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import get_async_session
-from app.schemas.booking import BookingCreate, BookingDB
-from app.crud.booking import create_booking, read_all_bookings_from_db
+from app.models.booking import Booking
+from app.schemas.booking import BookingCreate, BookingDB, BookingUpdate
+from app.crud.booking import (create_booking, get_booking_by_id,
+                              read_all_bookings_from_db, update_booking)
 
 router = APIRouter()
 
@@ -28,3 +30,30 @@ async def read_all_bookings(session: AsyncSession = Depends(
                               get_async_session)):
     all_bookings = await read_all_bookings_from_db(session)
     return all_bookings
+
+
+@router.patch(
+    "/{booking_id}",
+    response_model=BookingDB,
+    response_model_exclude_none=True,
+)
+async def update_booking_by_id(
+    booking_id: int,
+    booking_in: BookingUpdate,
+    session: AsyncSession = Depends(get_async_session),
+):
+    booking = await check_booking_exists(booking_id, session)
+    updated_booking = await update_booking(booking, booking_in,
+                                           session)
+    return updated_booking
+
+
+async def check_booking_exists(
+        booking_id: int,
+        session: AsyncSession,
+) -> Booking:
+    booking = await get_booking_by_id(booking_id, session)
+    if not booking:
+        raise HTTPException(status_code=404,
+                            detail="Бронь не найдена")
+    return booking
