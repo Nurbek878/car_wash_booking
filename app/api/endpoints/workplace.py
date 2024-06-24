@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_async_session
+from app.crud.booking import get_future_booking_for_workplace
 from app.crud.workplace import (
     create_workplace,
     delete_workplace,
@@ -11,6 +12,7 @@ from app.crud.workplace import (
     read_all_workplaces_from_db, update_workplace
 )
 from app.models import Workplace
+from app.schemas.booking import BookingDB
 from app.schemas.workplace import (WorkplaceCreate, WorkplaceDB,
                                    WorkplaceUpdate)
 
@@ -94,3 +96,18 @@ async def check_name_duplicate(
             status_code=422,
             detail='Моечный пост с таким названием уже существует!',
         )
+
+
+@router.get(
+    '/{workplace_id}/bookings',
+    response_model=list[BookingDB],
+)
+async def get_bookings_for_workplace(
+        workplace_id: int,
+        session: AsyncSession = Depends(get_async_session),
+):
+    await check_workplace_exists(workplace_id, session)
+    bookings = await get_future_booking_for_workplace(
+        workplace_id=workplace_id, session=session
+    )
+    return bookings

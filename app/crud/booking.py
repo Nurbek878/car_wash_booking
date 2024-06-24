@@ -3,8 +3,7 @@ from typing import Optional
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
-from app.models.booking import Booking
-from app.models.workplace import Workplace
+from app.models import Booking, Workplace
 from app.schemas.booking import BookingCreate, BookingUpdate
 
 
@@ -112,3 +111,17 @@ async def delete_booking(
     await session.delete(db_booking)
     await session.commit()
     return db_booking
+
+
+async def get_future_booking_for_workplace(
+        workplace_id: int,
+        session: AsyncSession,
+):
+    bookings = await session.execute(
+        select(Booking).where(
+            Booking.workplace_id == workplace_id,
+            Booking.booking_from > datetime.now()
+        )
+    )
+    bookings = bookings.scalars().all()
+    return bookings

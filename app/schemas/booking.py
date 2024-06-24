@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Extra, Field, validator
 
 from app.utils.time_utils import FROM_TIME
 
@@ -10,6 +10,9 @@ class BookingBase(BaseModel):
     brand: str = Field(..., description='Марка автомобиля')
     model: str = Field(..., description='Модель автомобиля')
     number: str = Field(..., description='Номер автомобиля')
+
+    class Config:
+        extra = Extra.forbid
 
 
 class BookingCreate(BookingBase):
