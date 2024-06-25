@@ -1,6 +1,6 @@
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, func
 from app.crud.base import CRUDBase
 from app.models import Booking, Workplace
 from app.schemas.booking import BookingCreate
@@ -79,6 +79,14 @@ class CRUDBooking(CRUDBase):
         )
         bookings = bookings.scalars().all()
         return bookings
+
+    async def get_bookings_by_date(self, booking_date: date,
+                                   session: AsyncSession):
+        booking_from_date = func.date(Booking.booking_from)
+        result = await session.execute(
+            select(Booking).where(booking_from_date == booking_date)
+        )
+        return result.scalars().all()
 
 
 booking_crud = CRUDBooking(Booking)

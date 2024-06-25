@@ -1,5 +1,7 @@
+from datetime import date
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.api.utils import get_working_hours
 from app.api.validators import check_booking_exists
 from app.core.db import get_async_session
 from app.schemas.booking import BookingCreate, BookingDB, BookingUpdate
@@ -59,3 +61,34 @@ async def delete_booking_by_id(
     booking = await check_booking_exists(booking_id, session)
     updated_booking = await booking_crud.remove(booking, session)
     return updated_booking
+
+
+@router.get('/booking-by-date/{booking_date}',
+            response_model=list[BookingDB], response_model_exclude_none=True)
+async def get_bookings_by_date(
+    booking_date: date,
+    session: AsyncSession = Depends(get_async_session)
+):
+    bookings = await booking_crud.get_bookings_by_date(booking_date, session)
+    if not bookings:
+        raise HTTPException(
+            status_code=404, detail="На данную дату бронь не найдена")
+    return bookings
+
+
+@router.get('/free-by-date/{booking_date}',
+            response_model=list[int], response_model_exclude_none=True)
+async def get_free_hours_by_date(
+    booking_date: date,
+    session: AsyncSession = Depends(get_async_session)
+):
+
+    all_hours = await get_working_hours(booking_date)
+    booked_hours = await booking_crud.get_bookings_by_date(booking_date,
+                                                           session)
+    booked_hour_numbers = [hour.booking_from.hour for hour in booked_hours]
+    free_hours = list(set(all_hours) - set(booked_hour_numbers))
+    if not free_hours:
+        raise HTTPException(
+            status_code=404, detail="На данную дату нет свободных мест")
+    return free_hours
