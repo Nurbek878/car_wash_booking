@@ -1,17 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.validators import check_name_duplicate, check_workplace_exists
 from app.core.db import get_async_session
 from app.crud.booking import get_future_booking_for_workplace
 from app.crud.workplace import (
     create_workplace,
     delete_workplace,
-    get_workplace_by_id,
-    get_workplace_id_by_name,
     read_all_workplaces_from_db, update_workplace
 )
-from app.models import Workplace
 from app.schemas.booking import BookingDB
 from app.schemas.workplace import (WorkplaceCreate, WorkplaceDB,
                                    WorkplaceUpdate)
@@ -73,29 +71,6 @@ async def delete_workplace_by_id(
     workplace = await check_workplace_exists(workplace_id, session)
     deleted_workplace = await delete_workplace(workplace, session)
     return deleted_workplace
-
-
-async def check_workplace_exists(
-        workplace_id: int,
-        session: AsyncSession,
-) -> Workplace:
-    workplace = await get_workplace_by_id(workplace_id, session)
-    if not workplace:
-        raise HTTPException(status_code=404,
-                            detail="Моечный пост не найден")
-    return workplace
-
-
-async def check_name_duplicate(
-        workplace_name: str,
-        session: AsyncSession,
-) -> None:
-    workplace_id = await get_workplace_id_by_name(workplace_name, session)
-    if workplace_id is not None:
-        raise HTTPException(
-            status_code=422,
-            detail='Моечный пост с таким названием уже существует!',
-        )
 
 
 @router.get(
