@@ -23,6 +23,7 @@ async def create_new_workplace(
     workplace: WorkplaceCreate,
     session: AsyncSession = Depends(get_async_session),
 ):
+    '''Создание нового моечного поста'''
     await check_name_duplicate(workplace.name, session)
     new_workplace = await workplace_crud.create(workplace, session)
     return new_workplace
@@ -35,6 +36,7 @@ async def create_new_workplace(
 )
 async def read_all_workplaces(session: AsyncSession = Depends(
                               get_async_session)):
+    '''Получение всех моечных постов'''
     all_workplaces = await workplace_crud.get_all(session)
     return all_workplaces
 
@@ -49,6 +51,7 @@ async def update_workplace_by_id(
     workplace_in: WorkplaceUpdate,
     session: AsyncSession = Depends(get_async_session),
 ):
+    '''Обновление моечного поста'''
     workplace = await check_workplace_exists(workplace_id, session)
     if workplace_in.name is not None:
         await check_name_duplicate(workplace_in.name, session)
@@ -64,6 +67,7 @@ async def delete_workplace_by_id(
     workplace_id: int,
     session: AsyncSession = Depends(get_async_session),
 ):
+    '''Удаление моечного поста'''
     workplace = await check_workplace_exists(workplace_id, session)
     deleted_workplace = await workplace_crud.remove(workplace, session)
     return deleted_workplace
@@ -77,6 +81,7 @@ async def get_bookings_for_workplace(
         workplace_id: int,
         session: AsyncSession = Depends(get_async_session),
 ):
+    '''Возвращает список броней для моечного поста'''
     await check_workplace_exists(workplace_id, session)
     bookings = await booking_crud.get_future_booking_for_workplace(
         workplace_id=workplace_id, session=session
