@@ -1,7 +1,6 @@
 from datetime import date
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.api.utils import get_working_hours
 from app.api.validators import check_booking_exists
 from app.core.db import get_async_session
 from app.schemas.booking import BookingCreate, BookingDB, BookingUpdate
@@ -15,6 +14,7 @@ async def create_new_booking(
     booking: BookingCreate,
     session: AsyncSession = Depends(get_async_session)
 ):
+    '''Создание нового бронирования'''
     try:
         new_booking = await booking_crud.create_booking(booking, session)
     except ValueError as e:
@@ -29,6 +29,9 @@ async def create_new_booking(
 )
 async def read_all_bookings(session: AsyncSession = Depends(
         get_async_session)):
+    '''
+    Получение всех бронирований
+    '''
     all_bookings = await booking_crud.get_all(session)
     return all_bookings
 
@@ -43,6 +46,9 @@ async def update_booking_by_id(
     booking_in: BookingUpdate,
     session: AsyncSession = Depends(get_async_session),
 ):
+    '''
+    Обновление бронирования
+    '''
     booking = await check_booking_exists(booking_id, session)
     updated_booking = await booking_crud.update(booking, booking_in,
                                                 session)
@@ -58,6 +64,9 @@ async def delete_booking_by_id(
     booking_id: int,
     session: AsyncSession = Depends(get_async_session),
 ):
+    '''
+    Удаление бронирования
+    '''
     booking = await check_booking_exists(booking_id, session)
     updated_booking = await booking_crud.remove(booking, session)
     return updated_booking
@@ -69,6 +78,9 @@ async def get_bookings_by_date(
     booking_date: date,
     session: AsyncSession = Depends(get_async_session)
 ):
+    '''
+    Возвращает список броней на указанную дату
+    '''
     bookings = await booking_crud.get_bookings_by_date(booking_date, session)
     if not bookings:
         raise HTTPException(
@@ -82,12 +94,12 @@ async def get_free_hours_by_date(
     booking_date: date,
     session: AsyncSession = Depends(get_async_session)
 ):
-
-    all_hours = await get_working_hours(booking_date)
-    booked_hours = await booking_crud.get_bookings_by_date(booking_date,
-                                                           session)
-    booked_hour_numbers = [hour.booking_from.hour for hour in booked_hours]
-    free_hours = list(set(all_hours) - set(booked_hour_numbers))
+    '''
+    Возвращает список свободных часов на указанную дату
+    '''
+    free_hours = await booking_crud.get_free_by_date_any_workplace(
+        booking_date, session
+    )
     if not free_hours:
         raise HTTPException(
             status_code=404, detail="На данную дату нет свободных мест")

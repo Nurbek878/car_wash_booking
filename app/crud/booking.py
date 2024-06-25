@@ -1,9 +1,13 @@
+import asyncio
 from datetime import date, datetime, timedelta
+from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, func
+from sqlalchemy import func, select, and_
 from app.crud.base import CRUDBase
+from app.crud.workplace import workplace_crud
 from app.models import Booking, Workplace
 from app.schemas.booking import BookingCreate
+from app.utils.time_utils import get_working_hours
 
 
 class CRUDBooking(CRUDBase):
@@ -66,6 +70,19 @@ class CRUDBooking(CRUDBase):
         await session.refresh(db_booking)
         return db_booking
 
+    async def is_workplace_booked(self, workplace_id: int,
+                                  booking_time: datetime,
+                                  session: AsyncSession) -> bool:
+        result = await session.execute(
+            select(Booking).where(
+                and_(
+                    Booking.workplace_id == workplace_id,
+                    Booking.booking_from == booking_time,
+                )
+            )
+        )
+        return bool(result.scalars().first())
+
     async def get_future_booking_for_workplace(
             self,
             workplace_id: int,
@@ -87,6 +104,32 @@ class CRUDBooking(CRUDBase):
             select(Booking).where(booking_from_date == booking_date)
         )
         return result.scalars().all()
+
+    async def get_all_workplaces(self,
+                                 session: AsyncSession) -> List[Workplace]:
+        return await workplace_crud.get_all(session)
+
+    async def is_time_slot_free(self, time_slot: datetime,
+                                workplaces: List[Workplace],
+                                session: AsyncSession) -> bool:
+        tasks = [self.is_workplace_booked(
+            workplace.id, time_slot, session) for workplace in workplaces]
+        results = await asyncio.gather(*tasks)
+        return not all(results)
+
+    async def get_free_by_date_any_workplace(self, booking_date: date,
+                                             session: AsyncSession):
+        start_time, end_time = await get_working_hours(booking_date)
+        all_workplaces = await self.get_all_workplaces(session)
+        free_hours = []
+        current_time = start_time
+
+        while current_time < end_time:
+            if await self.is_time_slot_free(current_time, all_workplaces,
+                                            session):
+                free_hours.append(current_time.hour)
+            current_time += timedelta(hours=1)
+        return free_hours
 
 
 booking_crud = CRUDBooking(Booking)
