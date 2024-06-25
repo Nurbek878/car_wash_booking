@@ -1,127 +1,84 @@
 from datetime import datetime, timedelta
-from typing import Optional
-from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
+from app.crud.base import CRUDBase
 from app.models import Booking, Workplace
-from app.schemas.booking import BookingCreate, BookingUpdate
+from app.schemas.booking import BookingCreate
 
 
-async def get_first_available_workplace(booking_from: datetime,
-                                        session: AsyncSession) -> int:
-    one_hour_later = booking_from + timedelta(hours=1)
+class CRUDBooking(CRUDBase):
 
-    # Подзапрос для получения всех занятых боксов на указанный период
-    subquery = select(Booking.workplace_id).where(
-        and_(
-            Booking.booking_from < one_hour_later,
-            booking_from < Booking.booking_from + timedelta(hours=1)
+    @staticmethod
+    async def get_first_available_workplace(booking_from: datetime,
+                                            session: AsyncSession) -> int:
+        one_hour_later = booking_from + timedelta(hours=1)
+
+        # Подзапрос для получения всех занятых боксов на указанный период
+        subquery = select(Booking.workplace_id).where(
+            and_(
+                Booking.booking_from < one_hour_later,
+                booking_from < Booking.booking_from + timedelta(hours=1)
+            )
+        ).subquery()
+        # Основной запрос для получения первого свободного бокса
+        result = await session.execute(
+            select(Workplace.id).where(Workplace.id.notin_(subquery))
         )
-    ).subquery()
+        available_workplace = result.scalars().first()
+        if available_workplace is None:
+            raise ValueError("Нет доступных боксов на указанное время.")
+        return available_workplace
 
-    # Основной запрос для получения первого свободного бокса
-    result = await session.execute(
-        select(Workplace.id).where(Workplace.id.notin_(subquery))
-    )
-    available_workplace = result.scalars().first()
-
-    if available_workplace is None:
-        raise ValueError("Нет доступных боксов на указанное время.")
-
-    return available_workplace
-
-
-async def is_booking_conflict(session: AsyncSession,
-                              new_booking: BookingCreate) -> bool:
-    one_hour_later = new_booking.booking_from + timedelta(hours=1)
-    conflict_query = select(Booking).where(
-        and_(
-            Booking.brand == new_booking.brand,
-            Booking.model == new_booking.model,
-            Booking.number == new_booking.number,
-            Booking.booking_from < one_hour_later,
-            new_booking.booking_from < Booking.booking_to
+    @staticmethod
+    async def is_booking_conflict(session: AsyncSession,
+                                  new_booking: BookingCreate) -> bool:
+        one_hour_later = new_booking.booking_from + timedelta(hours=1)
+        conflict_query = select(Booking).where(
+            and_(
+                Booking.brand == new_booking.brand,
+                Booking.model == new_booking.model,
+                Booking.number == new_booking.number,
+                Booking.booking_from < one_hour_later,
+                new_booking.booking_from < Booking.booking_to
+            )
         )
-    )
+        result = await session.execute(conflict_query)
+        return result.scalars().first() is not None
 
-    result = await session.execute(conflict_query)
-    return result.scalars().first() is not None
+    async def create_booking(self, new_booking: BookingCreate,
+                             session: AsyncSession) -> Booking:
+        if await CRUDBooking.is_booking_conflict(session, new_booking):
+            raise ValueError('Автомобиль данной марки и модели'
+                             'с таким номером '
+                             'уже забронирован на это же время.')
+        booking_dict = new_booking.dict()
+        booking_dict['booking_to'] = booking_dict['booking_from'] + timedelta(
+            hours=1)
 
+        # Получаем первый доступный бокс
+        booking_dict['workplace_id'
+                     ] = await CRUDBooking.get_first_available_workplace(
+            booking_dict['booking_from'], session)
 
-async def create_booking(new_booking: BookingCreate,
-                         session: AsyncSession) -> Booking:
-    if await is_booking_conflict(session, new_booking):
-        raise ValueError('Автомобиль данной марки и модели с таким номером '
-                         'уже забронирован на это же время.')
-    booking_dict = new_booking.dict()
-    booking_dict['booking_to'] = booking_dict['booking_from'] + timedelta(
-        hours=1)
+        db_booking = Booking(**booking_dict)
+        session.add(db_booking)
+        await session.commit()
+        await session.refresh(db_booking)
+        return db_booking
 
-    # Получаем первый доступный бокс
-    booking_dict['workplace_id'] = await get_first_available_workplace(
-        booking_dict['booking_from'], session)
-
-    db_booking = Booking(**booking_dict)
-    session.add(db_booking)
-    await session.commit()
-    await session.refresh(db_booking)
-    return db_booking
-
-
-async def read_all_bookings_from_db(
-    session: AsyncSession,
-) -> list[Booking]:
-    db_bookings = await session.execute(select(Booking))
-    return db_bookings.scalars().all()
-
-
-async def get_booking_by_id(
-        booking_id: int,
-        session: AsyncSession,
-) -> Optional[Booking]:
-    db_booking = await session.execute(
-        select(Booking).where(
-            Booking.id == booking_id
+    async def get_future_booking_for_workplace(
+            self,
+            workplace_id: int,
+            session: AsyncSession,
+    ):
+        bookings = await session.execute(
+            select(Booking).where(
+                Booking.workplace_id == workplace_id,
+                Booking.booking_from > datetime.now()
+            )
         )
-    )
-    db_booking = db_booking.scalars().first()
-    return db_booking
+        bookings = bookings.scalars().all()
+        return bookings
 
 
-async def update_booking(
-        db_booking: Booking,
-        booking_in: BookingUpdate,
-        session: AsyncSession,
-) -> Booking:
-    obj_data = jsonable_encoder(db_booking)
-    update_data = booking_in.dict(exclude_unset=True)
-    for field in obj_data:
-        if field in update_data:
-            setattr(db_booking, field, update_data[field])
-    session.add(db_booking)
-    await session.commit()
-    await session.refresh(db_booking)
-    return db_booking
-
-
-async def delete_booking(
-        db_booking: Workplace,
-        session: AsyncSession,
-) -> Booking:
-    await session.delete(db_booking)
-    await session.commit()
-    return db_booking
-
-
-async def get_future_booking_for_workplace(
-        workplace_id: int,
-        session: AsyncSession,
-):
-    bookings = await session.execute(
-        select(Booking).where(
-            Booking.workplace_id == workplace_id,
-            Booking.booking_from > datetime.now()
-        )
-    )
-    bookings = bookings.scalars().all()
-    return bookings
+booking_crud = CRUDBooking(Booking)

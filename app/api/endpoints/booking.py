@@ -3,9 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.validators import check_booking_exists
 from app.core.db import get_async_session
 from app.schemas.booking import BookingCreate, BookingDB, BookingUpdate
-from app.crud.booking import (create_booking, delete_booking,
-                              read_all_bookings_from_db,
-                              update_booking)
+from app.crud.booking import booking_crud
 
 router = APIRouter()
 
@@ -16,7 +14,7 @@ async def create_new_booking(
     session: AsyncSession = Depends(get_async_session)
 ):
     try:
-        new_booking = await create_booking(booking, session)
+        new_booking = await booking_crud.create_booking(booking, session)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return new_booking
@@ -28,8 +26,8 @@ async def create_new_booking(
     response_model_exclude_none=True,
 )
 async def read_all_bookings(session: AsyncSession = Depends(
-                              get_async_session)):
-    all_bookings = await read_all_bookings_from_db(session)
+        get_async_session)):
+    all_bookings = await booking_crud.get_all(session)
     return all_bookings
 
 
@@ -44,8 +42,8 @@ async def update_booking_by_id(
     session: AsyncSession = Depends(get_async_session),
 ):
     booking = await check_booking_exists(booking_id, session)
-    updated_booking = await update_booking(booking, booking_in,
-                                           session)
+    updated_booking = await booking_crud.update(booking, booking_in,
+                                                session)
     return updated_booking
 
 
@@ -59,5 +57,5 @@ async def delete_booking_by_id(
     session: AsyncSession = Depends(get_async_session),
 ):
     booking = await check_booking_exists(booking_id, session)
-    updated_booking = await delete_booking(booking, session)
+    updated_booking = await booking_crud.remove(booking, session)
     return updated_booking
