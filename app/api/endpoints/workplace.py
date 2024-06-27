@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.validators import check_name_duplicate, check_workplace_exists
 from app.core.db import get_async_session
+from app.core.user import current_superuser
 from app.crud.booking import booking_crud
 from app.crud.workplace import workplace_crud
 from app.schemas.booking import BookingDB
@@ -18,6 +19,7 @@ router = APIRouter()
     "/",
     response_model=WorkplaceDB,
     response_model_exclude_none=True,
+    dependencies=[Depends(current_superuser)],
 )
 async def create_new_workplace(
     workplace: WorkplaceCreate,
@@ -33,6 +35,7 @@ async def create_new_workplace(
     "/",
     response_model=list[WorkplaceDB],
     response_model_exclude_none=True,
+    dependencies=[Depends(current_superuser)],
 )
 async def read_all_workplaces(session: AsyncSession = Depends(
                               get_async_session)):
@@ -45,6 +48,7 @@ async def read_all_workplaces(session: AsyncSession = Depends(
     "/{workplace_id}",
     response_model=WorkplaceDB,
     response_model_exclude_none=True,
+    dependencies=[Depends(current_superuser)],
 )
 async def update_workplace_by_id(
     workplace_id: int,
@@ -62,7 +66,8 @@ async def update_workplace_by_id(
 
 @router.delete("/{workplace_id}",
                response_model=WorkplaceDB,
-               response_model_exclude_none=True)
+               response_model_exclude_none=True,
+               dependencies=[Depends(current_superuser)],)
 async def delete_workplace_by_id(
     workplace_id: int,
     session: AsyncSession = Depends(get_async_session),

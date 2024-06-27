@@ -7,8 +7,6 @@ from app.schemas.user import UserCreate, UserRead, UserUpdate
 router = APIRouter()
 
 router.include_router(
-    # В роутер аутентификации
-    # передается объект бэкенда аутентификации.
     fastapi_users.get_auth_router(auth_backend),
     prefix='/auth/jwt',
     tags=['auth'],

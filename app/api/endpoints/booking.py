@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.validators import check_booking_exists
 from app.core.db import get_async_session
+from app.core.user import current_superuser
 from app.schemas.booking import BookingCreate, BookingDB, BookingUpdate
 from app.crud.booking import booking_crud
 
@@ -26,6 +27,7 @@ async def create_new_booking(
     "/",
     response_model=list[BookingDB],
     response_model_exclude_none=True,
+    dependencies=[Depends(current_superuser)],
 )
 async def read_all_bookings(session: AsyncSession = Depends(
         get_async_session)):
