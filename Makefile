@@ -1,5 +1,8 @@
 generate:
-	alembic revision --m=$(NAME) --autogenerate
+	@echo "Please provide a migration name by running 'make generate NAME=your_migration_name'"
+
+generate-migration:
+	alembic revision --message "$(NAME)" --autogenerate
 
 migrate:
 	alembic upgrade head
